@@ -1,0 +1,8 @@
+
+.idea/
+
+*.pyc
+
+data/raw/the-movies-dataset/
+
+user_settings.py
