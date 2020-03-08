@@ -17,13 +17,12 @@ def main():
     item_column = 'movieId'
     rating_column = 'rating'
 
-
     ratings_samples = user_ratings_df[[user_column, item_column, rating_column]].values
     ratings_samples = [(int(r[0]), int(r[1]), r[2]) for r in ratings_samples]
 
     train_ratings, test_ratings = train_test_split(ratings_samples, train_size=0.8, shuffle=True, random_state=123)
 
-    #CLASSIC MEMORY BASED
+    # CLASSIC MEMORY BASED
     # method = MemoryBasedCollaborativeFiltering
     #
     # cf = method(users_ids=user_ratings_df[user_column].unique(),
@@ -32,20 +31,21 @@ def main():
     # cf.fit(user_items_ratings=train_ratings)
 
     # SVD MATRIX FACTORISATION
-    method = SVDCollaborativeFiltering
-
-    cf = method(users_ids=user_ratings_df[user_column].unique(),
-                items_ids=user_ratings_df[item_column].unique())
-
-    cf.fit(user_items_ratings=train_ratings, n_factors=100)
-
-    # NEURAL
-    # method = NeuralCollaborativeFiltering
+    # method = SVDCollaborativeFiltering
     #
     # cf = method(users_ids=user_ratings_df[user_column].unique(),
     #             items_ids=user_ratings_df[item_column].unique())
     #
-    # cf.fit(train_user_item_ratings=train_ratings, test_user_item_ratings=test_ratings, n_factors=100)
+    # cf.fit(user_items_ratings=train_ratings, n_factors=100)
+
+    # NEURAL
+    method = NeuralCollaborativeFiltering
+
+    cf = method(users_ids=user_ratings_df[user_column].unique(),
+                items_ids=user_ratings_df[item_column].unique())
+
+    cf.fit(train_user_item_ratings=train_ratings, test_user_item_ratings=test_ratings, n_factors=32, batch_size=50,
+           epochs=20)
 
     y_true = []
     y_pred = []
