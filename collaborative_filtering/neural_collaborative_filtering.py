@@ -23,6 +23,7 @@ class NeuralCollaborativeFiltering:
         self.id_to_user_id_vocab, self.user_id_to_id_vocab = create_id_vocab(users_ids)
         self.id_to_item_id_vocab, self.item_id_to_id_vocab = create_id_vocab(items_ids)
         self.model = None
+        self.user_ratings = None
         self.train_loss = tf.keras.metrics.Mean(name='train_loss')
         self.test_loss = tf.keras.metrics.Mean(name='test_loss')
 
@@ -265,6 +266,14 @@ class NeuralCollaborativeFiltering:
         return gmf_model, mlp_model
 
     def fit(self, train_user_item_ratings, test_user_item_ratings, epochs=10, batch_size=100, n_factors=16):
+        self.user_ratings = np.zeros((len(self.id_to_user_id_vocab.keys()), len(self.id_to_item_id_vocab.keys())))
+
+        for i in tqdm(range(len(train_user_item_ratings))):
+            user, item, rating = train_user_item_ratings[i]
+            user_index = self.user_id_to_id_vocab[int(user)]
+            item_index = self.item_id_to_id_vocab[int(item)]
+
+            self.user_ratings[user_index, item_index] = rating
 
         gmf_model, mlp_model = self._pretrain_models(train_user_item_ratings, epochs=1, n_factors=n_factors)
 
@@ -295,3 +304,12 @@ class NeuralCollaborativeFiltering:
         user_input = np.array([self.user_id_to_id_vocab[user_id]])
         item_input = np.array([self.item_id_to_id_vocab[item_id]])
         return self.model.predict([user_input, item_input]).squeeze().tolist()
+
+    def get_top(self, user_id, k=10):
+        user_input = np.full((len(self.item_id_to_id_vocab.keys()), 1), fill_value=self.user_id_to_id_vocab[user_id])
+        item_input = np.expand_dims(np.arange(0, len(self.item_id_to_id_vocab.keys())), axis=1)
+
+        non_rated_user_movies = self.user_ratings[self.user_id_to_id_vocab[user_id], :] == 0
+        recommendations = self.model.predict([user_input, item_input]).squeeze()
+        recommendations_idx = np.argsort(recommendations)[::-1]
+        return [self.id_to_item_id_vocab[i] for i in recommendations_idx[:k] if non_rated_user_movies[i]]
