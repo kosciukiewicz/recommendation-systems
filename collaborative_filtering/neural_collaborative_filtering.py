@@ -3,6 +3,8 @@ import numpy as np
 from tensorflow.python.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 from tqdm import tqdm
 
+MLP_DENSE_LAYERS_SIZE = [32, 16, 4]
+
 
 def create_id_vocab(data):
     id_to_data_id_vocab = {}
@@ -61,6 +63,118 @@ class NeuralCollaborativeFiltering:
 
         return model
 
+    def _build_gmf_model(self, n_factors):
+        user_inputs = tf.keras.Input(shape=(1,))
+        item_inputs = tf.keras.Input(shape=(1,))
+
+        mf_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
+                                                      name="gmf_user_embedding")(user_inputs)
+        mf_user_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mf_user_embedding)
+
+        mf_item_embedding = tf.keras.layers.Embedding(self.num_items, n_factors, input_length=1,
+                                                      name="gmf_item_embedding")(item_inputs)
+        mf_item_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mf_item_embedding)
+
+        gmf_dot_product = tf.keras.layers.Dot(axes=1)([mf_user_embedding, mf_item_embedding])
+        gmf_dot_product = tf.keras.layers.Flatten()(gmf_dot_product)
+
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=False, name="gmf_dense_output")(
+            gmf_dot_product)
+
+        model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
+
+        return model
+
+    def _build_mlp_model(self, n_factors):
+        user_inputs = tf.keras.Input(shape=(1,))
+        item_inputs = tf.keras.Input(shape=(1,))
+
+        mlp_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
+                                                       name="mlp_user_embedding")(user_inputs)
+        mlp_user_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mlp_user_embedding)
+
+        mlp_item_embedding = tf.keras.layers.Embedding(self.num_items, n_factors, input_length=1,
+                                                       name="mlp_item_embedding")(item_inputs)
+        mlp_item_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mlp_item_embedding)
+
+        mlp_concatenation = tf.keras.layers.Concatenate(axis=1)(
+            [mlp_user_embedding, mlp_item_embedding])
+        mlp_concatenation = tf.keras.layers.Flatten()(mlp_concatenation)
+
+        dense_output = mlp_concatenation
+        for layer_size in MLP_DENSE_LAYERS_SIZE:
+            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=False,
+                                                 name=f"mlp_dense_{layer_size}")(dense_output)
+
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=False, name="mlp_dense_output")(
+            dense_output)
+
+        model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
+
+        return model
+
+    def _build_neu_mf_model(self, n_factors, pretrained_gmf_model, pretrained_mlp_model):
+        user_inputs = tf.keras.Input(shape=(1,))
+        item_inputs = tf.keras.Input(shape=(1,))
+
+        mf_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
+                                                      name="gmf_user_embedding",
+                                                      weights=pretrained_gmf_model.get_layer(
+                                                          "gmf_user_embedding").get_weights())(user_inputs)
+        mf_user_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mf_user_embedding)
+
+        mf_item_embedding = tf.keras.layers.Embedding(self.num_items, n_factors, input_length=1,
+                                                      name="gmf_item_embedding",
+                                                      weights=pretrained_gmf_model.get_layer(
+                                                          "gmf_item_embedding").get_weights())(item_inputs)
+        mf_item_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mf_item_embedding)
+
+        mlp_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
+                                                       name="mlp_user_embedding",
+                                                       weights=pretrained_mlp_model.get_layer(
+                                                           "mlp_user_embedding").get_weights())(user_inputs)
+        mlp_user_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mlp_user_embedding)
+
+        mlp_item_embedding = tf.keras.layers.Embedding(self.num_items, n_factors, input_length=1,
+                                                       name="mlp_item_embedding",
+                                                       weights=pretrained_mlp_model.get_layer(
+                                                           "mlp_item_embedding").get_weights())(item_inputs)
+        mlp_item_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mlp_item_embedding)
+
+        gmf_dot_product = tf.keras.layers.Dot(axes=1)([mf_user_embedding, mf_item_embedding])
+        gmf_dot_product = tf.keras.layers.Flatten()(gmf_dot_product)
+
+        mlp_concatenation = tf.keras.layers.Concatenate(axis=1)(
+            [mlp_user_embedding, mlp_item_embedding])
+        mlp_concatenation = tf.keras.layers.Flatten()(mlp_concatenation)
+
+        dense_output = mlp_concatenation
+
+        for layer_size in MLP_DENSE_LAYERS_SIZE:
+            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=False,
+                                                 name=f"mlp_dense_{layer_size}",
+                                                 weights=pretrained_mlp_model.get_layer(
+                                                     f"mlp_dense_{layer_size}").get_weights())(dense_output)
+
+        neu_concat = tf.keras.layers.Concatenate(axis=1)([gmf_dot_product, dense_output])
+
+        final_gmf_weights = pretrained_gmf_model.get_layer("gmf_dense_output").get_weights()
+        final_mlp_wights = pretrained_mlp_model.get_layer("mlp_dense_output").get_weights()
+
+        new_final_weights = np.concatenate([
+            final_gmf_weights[0],
+            final_mlp_wights[0],
+        ], axis=0)
+
+        new_final_biases = final_gmf_weights[1] + final_mlp_wights[1]
+
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=False,
+                                            weights=[0.5 * new_final_weights, 0.5 * new_final_biases])(neu_concat)
+
+        model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
+
+        return model
+
     @tf.function
     def test_step(self, loss_object, user_input, item_input, labels):
         predictions = self.model([user_input, item_input])
@@ -68,6 +182,7 @@ class NeuralCollaborativeFiltering:
 
         self.test_loss(t_loss)
 
+    @tf.function
     def train_step(self, optimizer, loss_object, user_input, item_input, labels):
         with tf.GradientTape() as tape:
             predictions = self.model([user_input, item_input], training=True)
@@ -85,10 +200,78 @@ class NeuralCollaborativeFiltering:
         return tf.data.Dataset.from_tensor_slices((users_ids, items_ids, ratings_ids)).shuffle(10000, seed=56).batch(
             batch_size)
 
-    def fit(self, train_user_item_ratings, test_user_item_ratings, epochs=10, batch_size=100, n_factors=None):
-        self.model = self._build_concat_model(n_factors)
+    @tf.function
+    def gmf_pretrain_step(self, model, optimizer, loss_object, user_input, item_input, labels):
+        with tf.GradientTape() as tape:
+            predictions = model([user_input, item_input], training=True)
+            loss = loss_object(labels, predictions)
+
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        self.train_loss(loss)
+
+    @tf.function
+    def mlp_pretrain_step(self, model, optimizer, loss_object, user_input, item_input, labels):
+        with tf.GradientTape() as tape:
+            predictions = model([user_input, item_input], training=True)
+            loss = loss_object(labels, predictions)
+
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        self.train_loss(loss)
+
+    def _pretrain_models(self, train_user_item_ratings, epochs=20, batch_size=100,
+                         n_factors=None):
+
+        print("Starting pretraining phase...")
+
+        gmf_model = self._build_gmf_model(n_factors=n_factors)
+        mlp_model = self._build_mlp_model(n_factors=n_factors)
+
+        train_ds = self._generate_dataset(train_user_item_ratings, batch_size)
+
         loss_object = tf.keras.losses.MeanSquaredError()
-        optimizer = tf.keras.optimizers.Adamax()
+        optimizer = tf.keras.optimizers.Adam()
+
+        for e in range(epochs):
+            for train_data in tqdm(train_ds, total=len(train_user_item_ratings) // batch_size):
+                user_id, item_id, rating = train_data
+                self.gmf_pretrain_step(gmf_model, optimizer, loss_object, user_id, item_id, rating)
+
+            template = 'Epoch {}, Loss: {}'
+
+            print(template.format(e + 1,
+                                  self.train_loss.result().numpy()))
+
+        self.train_loss.reset_states()
+
+        loss_object = tf.keras.losses.MeanSquaredError()
+        optimizer = tf.keras.optimizers.Adam()
+
+        for e in range(epochs):
+            for train_data in tqdm(train_ds, total=len(train_user_item_ratings) // batch_size):
+                user_id, item_id, rating = train_data
+                self.mlp_pretrain_step(mlp_model, optimizer, loss_object, user_id, item_id, rating)
+
+            template = 'Epoch {}, Loss: {}'
+
+            print(template.format(e + 1,
+                                  self.train_loss.result().numpy()))
+
+        self.train_loss.reset_states()
+
+        return gmf_model, mlp_model
+
+    def fit(self, train_user_item_ratings, test_user_item_ratings, epochs=10, batch_size=100, n_factors=16):
+
+        gmf_model, mlp_model = self._pretrain_models(train_user_item_ratings, epochs=1, n_factors=n_factors)
+
+        self.model = self._build_neu_mf_model(n_factors, pretrained_gmf_model=gmf_model, pretrained_mlp_model=mlp_model)
+
+        loss_object = tf.keras.losses.MeanSquaredError()
+        optimizer = tf.keras.optimizers.Adam()
 
         train_ds = self._generate_dataset(train_user_item_ratings, batch_size)
         test_ds = self._generate_dataset(test_user_item_ratings, batch_size)
@@ -109,4 +292,6 @@ class NeuralCollaborativeFiltering:
                                   self.test_loss.result().numpy()))
 
     def predict(self, user_id, item_id):
-        pass
+        user_input = np.array([self.user_id_to_id_vocab[user_id]])
+        item_input = np.array([self.item_id_to_id_vocab[item_id]])
+        return self.model.predict([user_input, item_input]).squeeze().tolist()
