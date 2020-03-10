@@ -22,7 +22,7 @@ def main():
 
     train_ratings, test_ratings = train_test_split(ratings_samples, train_size=0.8, shuffle=True, random_state=123)
 
-    # CLASSIC MEMORY BASED
+    #CLASSIC MEMORY BASED
     # method = MemoryBasedCollaborativeFiltering
     #
     # cf = method(users_ids=user_ratings_df[user_column].unique(),
@@ -36,7 +36,7 @@ def main():
     # cf = method(users_ids=user_ratings_df[user_column].unique(),
     #             items_ids=user_ratings_df[item_column].unique())
     #
-    # cf.fit(user_items_ratings=train_ratings, n_factors=100)
+    # cf.fit(user_items_ratings=train_ratings, n_factors=200)
 
     # NEURAL
     method = NeuralCollaborativeFiltering
@@ -45,19 +45,20 @@ def main():
                 items_ids=user_ratings_df[item_column].unique())
 
     cf.fit(train_user_item_ratings=train_ratings, test_user_item_ratings=test_ratings, n_factors=32, batch_size=50,
-           epochs=20)
+           epochs=1)
 
-    y_true = []
-    y_pred = []
-
-    for i in tqdm(range(len(test_ratings))):
-        user, item, ratings = test_ratings[i]
-        predicted_rating = cf.predict(user_id=user, item_id=item)
-
-        y_true.append(ratings)
-        y_pred.append(predicted_rating)
-
-    print(mean_squared_error(y_true=y_true, y_pred=y_pred))
+    print(cf.get_top(1, k=20))
+    # y_true = []
+    # y_pred = []
+    #
+    # for i in tqdm(range(len(test_ratings))):
+    #     user, item, ratings = test_ratings[i]
+    #     predicted_rating = cf.predict(user_id=user, item_id=item)
+    #
+    #     y_true.append(ratings)
+    #     y_pred.append(predicted_rating)
+    #
+    # print(mean_squared_error(y_true=y_true, y_pred=y_pred))
 
 
 if __name__ == '__main__':
