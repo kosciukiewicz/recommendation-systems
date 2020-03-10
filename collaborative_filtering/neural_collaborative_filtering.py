@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 from tqdm import tqdm
+from interfaces import RecommendationMethod
 
 MLP_DENSE_LAYERS_SIZE = [32, 16, 4]
 
@@ -18,7 +19,7 @@ def create_id_vocab(data):
     return id_to_data_id_vocab, {v: k for k, v in id_to_data_id_vocab.items()}
 
 
-class NeuralCollaborativeFiltering:
+class NeuralCollaborativeFiltering(RecommendationMethod):
     def __init__(self, users_ids, items_ids):
         self.id_to_user_id_vocab, self.user_id_to_id_vocab = create_id_vocab(users_ids)
         self.id_to_item_id_vocab, self.item_id_to_id_vocab = create_id_vocab(items_ids)
@@ -305,7 +306,7 @@ class NeuralCollaborativeFiltering:
         item_input = np.array([self.item_id_to_id_vocab[item_id]])
         return self.model.predict([user_input, item_input]).squeeze().tolist()
 
-    def get_top(self, user_id, k=10):
+    def get_recommendations(self, user_id, k):
         user_input = np.full((len(self.item_id_to_id_vocab.keys()), 1), fill_value=self.user_id_to_id_vocab[user_id])
         item_input = np.expand_dims(np.arange(0, len(self.item_id_to_id_vocab.keys())), axis=1)
 
