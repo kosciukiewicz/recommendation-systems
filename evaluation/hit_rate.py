@@ -17,11 +17,13 @@ class HitRate:
             recommendation_method.fit(np.delete(ratings, test, axis=0))
             selected_items = recommendation_method.get_recommendations(test_user,
                                                                        self.n)
-            hits += self.is_hit(ratings, test_user, selected_items)
+
+            test_movie = int(ratings[test[0], self.movie_col_id])
+            hits += 1 if test_movie in selected_items else 0
             print(hits)
         return hits
 
-    def is_hit(self, ratings, user_id, selected_items):
-        hits = ratings[ratings[:, self.user_col_id] == user_id][:, self.movie_col_id]
-        return len(set.intersection(set(selected_items),
-                                    set(hits)))
+    # def is_hit(self, ratings, user_id, selected_items):
+    #     hits = ratings[ratings[:, self.user_col_id] == user_id][:, self.movie_col_id]
+    #     return len(set.intersection(set(selected_items),
+    #                                 set(hits)))
