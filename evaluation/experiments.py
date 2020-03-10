@@ -3,6 +3,7 @@ from content_based_recomendation.weigted_rating_cbr import WeightedRatingCbr
 from settings import PATH_TO_DATA
 from content_based_recomendation.scripts.movie_lens_features_extractor import FeaturesExtractor
 from collaborative_filtering.memory_based_collaborative_filtering import MemoryBasedCollaborativeFiltering
+from collaborative_filtering.svd_collaborative_filtering import SVDCollaborativeFiltering
 import pandas as pd
 import os
 
@@ -21,6 +22,8 @@ def main():
 
     hit_rate_ns = [30]
     methods = [MemoryBasedCollaborativeFiltering(ratings[user_column].unique(),
+                                                 ratings[item_column].unique()),
+               SVDCollaborativeFiltering(ratings[user_column].unique(),
                                                  ratings[item_column].unique()),
                WeightedRatingCbr(data['combined'], movie_mapping)]
 

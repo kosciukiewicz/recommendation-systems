@@ -57,4 +57,4 @@ class MemoryBasedCollaborativeFiltering(RecommendationMethod):
 
         recommendations = user_similarities.dot(item_ratings) / (np.sum(user_similarities) + 1e-06)
         recommendations_idx = np.argsort(recommendations)[::-1]
-        return [self.id_to_item_id_vocab[i] for i in recommendations_idx[:k] if non_rated_user_movies[i]]
+        return [(self.id_to_item_id_vocab[i], recommendations[i]) for i in recommendations_idx[:k] if non_rated_user_movies[i]]
