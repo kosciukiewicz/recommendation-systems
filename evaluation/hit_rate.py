@@ -1,16 +1,27 @@
 from sklearn.model_selection import LeaveOneOut
-from user_settings import PATH_TO_DATA
-import pandas as pd
+import numpy as np
+
 
 class HitRate:
     def __init__(self, n):
         self.n = n
+        self.user_col_id = 0
+        self.movie_col_id = 1
 
-    def evaluate(self, recommendation_method, user_items_ratings):
-        pass
+    def evaluate(self, recommendation_method, ratings):
+        hits = 0
+        cross_validation = LeaveOneOut()
 
-    def is_hit(self, user_items_ratings, user_id, selected_items):
-        pass
+        for train, test in cross_validation.split(ratings):
+            test_user = int(ratings[test[0], self.user_col_id])
+            recommendation_method.fit(np.delete(ratings, test, axis=0))
+            selected_items = recommendation_method.get_recommendations(test_user,
+                                                                       self.n)
+            hits += self.is_hit(ratings, test_user, selected_items)
+            print(hits)
+        return hits
 
-
-
+    def is_hit(self, ratings, user_id, selected_items):
+        hits = ratings[ratings[:, self.user_col_id] == user_id][:, self.movie_col_id]
+        return len(set.intersection(set(selected_items),
+                                    set(hits)))
