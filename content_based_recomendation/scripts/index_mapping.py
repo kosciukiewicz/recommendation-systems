@@ -6,9 +6,24 @@ class IndexMapping:
     def __init__(self, movies_maping):
         self.user_mapping = None
         self.movie_mapping = movies_maping
+        self.internal_movie_mapping = {v: k for k, v in movies_maping.items()}
+
         self.user_col_id = 0
         self.movie_col_id = 1
         self.rating_col_id = 3
+
+    def map_external_user_id(self, external_id):
+        return self.user_mapping[external_id]
+
+    def map_internal_movie_id(self, internal_id):
+        return self.internal_movie_mapping[internal_id]
+
+    def get_users_matrix(self, ratings):
+        self.reassign_movie_id(ratings)
+        self.reassign_user_id(ratings)
+        ratings = self.remove_na_id(ratings)
+        return self.generate_user_matrix(ratings), \
+               self.generate_rated_mask_matrix(ratings)
 
     def reassign_ids(self, ratings, mapping, col):
         assignement = np.vectorize(lambda current_id: mapping.get(current_id))
@@ -43,9 +58,4 @@ class IndexMapping:
     def remove_na_id(self, ratings):
         return ratings[~np.isnan(ratings).any(axis=1)]
 
-    def get_users_matrix(self, ratings):
-        self.reassign_movie_id(ratings)
-        self.reassign_user_id(ratings)
-        ratings = self.remove_na_id(ratings)
-        return self.generate_user_matrix(ratings), \
-               self.generate_rated_mask_matrix(ratings)
+

@@ -20,7 +20,10 @@ class WeightedRatingCbr(RecommendationMethod):
                                      * mask
 
     def get_recommendations(self, user_id, n):
-        return np.argsort(-self.recommendation_matrix[user_id, :])[1:n + 1]
+        user_id = self.index_mapping.map_external_user_id(user_id)
+        internal_ids = np.argsort(-self.recommendation_matrix[user_id, :])[1:n + 1]
+        return list(map(self.index_mapping.map_internal_movie_id, internal_ids))
+
 
     def calc_movies_matrix(self, data):
         cv = CountVectorizer(min_df=3)
