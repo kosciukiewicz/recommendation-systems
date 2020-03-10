@@ -3,6 +3,7 @@ from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import svds, eigs
+from interfaces import RecommendationMethod
 
 
 def create_id_vocab(data):
@@ -17,7 +18,7 @@ def create_id_vocab(data):
     return id_to_data_id_vocab, {v: k for k, v in id_to_data_id_vocab.items()}
 
 
-class SVDCollaborativeFiltering:
+class SVDCollaborativeFiltering(RecommendationMethod):
     def __init__(self, users_ids, items_ids):
         self.id_to_user_id_vocab, self.user_id_to_id_vocab = create_id_vocab(users_ids)
         self.id_to_item_id_vocab, self.item_id_to_id_vocab = create_id_vocab(items_ids)
@@ -47,11 +48,11 @@ class SVDCollaborativeFiltering:
             .dot(np.diag(self.s)) \
             .dot(self.vt[:, self.item_id_to_id_vocab[item_id]])
 
-    def get_top(self, user_id, k=10):
+    def get_recommendations(self, user_id, k):
         recommendations = self.u[self.user_id_to_id_vocab[user_id], :] \
             .dot(np.diag(self.s)) \
             .dot(self.vt)
         non_rated_user_movies = self.user_ratings[self.user_id_to_id_vocab[user_id], :] == 0
 
         recommendations_idx = np.argsort(recommendations)[::-1]
-        return [self.id_to_item_id_vocab[i] for i in recommendations_idx[:k] if non_rated_user_movies[i]]
+        return [(self.id_to_item_id_vocab[i], recommendations[i]) for i in recommendations_idx if non_rated_user_movies[i]][:k]
