@@ -7,7 +7,7 @@ class AverageHybridFiltering(HybridFiltering):
     def __init__(self, filterings, max_len=None):
         super(AverageHybridFiltering, self).__init__(filterings, max_len)
 
-    def get_top(self, user_id, k=10):
+    def get_recommendations(self, user_id, k=10):
         m = self.max_len
         predicts = list(map(lambda f: list(f.get_top(user_id, m)) if hasattr(f, 'get_top') else list(f.get_recommendations(user_id, m)), self.filterings))
         unique = np.unique([x for x in itertools.chain.from_iterable(itertools.zip_longest(*predicts)) if x is not None]).tolist()

@@ -1,11 +1,16 @@
-class HybridFiltering:
+from abc import abstractmethod
+import interfaces
+
+
+class HybridFiltering(interfaces.RecommendationMethod):
     def __init__(self, filterings, max_len=None):
         self.filterings = filterings
         self.max_len = max_len
 
-    def fit(self, filterings_args, max_len):
-        self.max_len = max_len
-        map(lambda f, args: f.fit(*args), zip(self.filterings, filterings_args))
+    def fit(self, filterings_args, max_len=None):
+        self.max_len = max_len if max_len is not None else self.max_len
+        map(lambda x: x.fit(filterings_args), self.filterings)
 
-    def get_top(self, user_id, k=10):
-        return None
+    @abstractmethod
+    def get_recommendations(self, user_id, k=10):
+        pass
