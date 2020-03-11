@@ -23,7 +23,13 @@ def main():
 
     movie_mapping = dict(zip(data['id'].tolist(), data.index.astype(int)))
 
+    user_ids = ratings[user_column].unique()
+    movie_ids = ratings[item_column].unique()
+
     hit_rate_ns = [30]
+    methods = [MemoryBasedCollaborativeFiltering(user_ids, movie_ids),
+               WeightedRatingCbr(data['combined'], movie_mapping),
+               SVDCollaborativeFiltering(user_ids, movie_ids)]
 
     mem_factory = lambda: MemoryBasedCollaborativeFiltering(ratings[user_column].unique(),
                                                  ratings[item_column].unique())
@@ -42,7 +48,9 @@ def main():
     for n in hit_rate_ns:
         hit_rate = HitRate(n)
         for method in methods:
-            hit_rate.evaluate(method, ratings.values[:, :3])
+            print(type(method))
+            result = hit_rate.evaluate(method, ratings.values[:, :3])
+            print(f'Final result: {result}')
 
 
 if __name__ == '__main__':
