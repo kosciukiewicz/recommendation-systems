@@ -1,4 +1,4 @@
-from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import LeaveOneOut, StratifiedKFold
 import numpy as np
 
 
@@ -12,6 +12,7 @@ class HitRate:
         hits = 0
         cross_validation = LeaveOneOut()
 
+        print(recommendation_method)
         for train, test in cross_validation.split(ratings):
             test_user = int(ratings[test[0], self.user_col_id])
             recommendation_method.fit(np.delete(ratings, test, axis=0))
