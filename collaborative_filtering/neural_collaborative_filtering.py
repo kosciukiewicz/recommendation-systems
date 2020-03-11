@@ -4,20 +4,9 @@ from tensorflow.python.keras.callbacks import TensorBoard, ModelCheckpoint, Earl
 from tqdm import tqdm
 from settings import CHECKPOINTS_DIRECTORY
 from interfaces import RecommendationMethod
+from collaborative_filtering.utils import create_id_vocab, create_user_items_rating_matrix
 
 MLP_DENSE_LAYERS_SIZE = [32, 16, 4]
-
-
-def create_id_vocab(data):
-    id_to_data_id_vocab = {}
-
-    id = 0
-    for i in data:
-        if i not in id_to_data_id_vocab.values():
-            id_to_data_id_vocab[id] = i
-            id += 1
-
-    return id_to_data_id_vocab, {v: k for k, v in id_to_data_id_vocab.items()}
 
 
 class NeuralCollaborativeFiltering(RecommendationMethod):
@@ -41,14 +30,8 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
         user_inputs = tf.keras.Input(shape=(1,))
         item_inputs = tf.keras.Input(shape=(1,))
 
-        self.user_ratings = np.zeros((len(self.id_to_user_id_vocab.keys()), len(self.id_to_item_id_vocab.keys())))
-
-        for i in tqdm(range(len(train_user_item_ratings))):
-            user, item, rating = train_user_item_ratings[i]
-            user_index = self.user_id_to_id_vocab[int(user)]
-            item_index = self.item_id_to_id_vocab[int(item)]
-
-            self.user_ratings[user_index, item_index] = rating
+        self.user_ratings = create_user_items_rating_matrix(train_user_item_ratings, self.user_id_to_id_vocab,
+                                                            self.item_id_to_id_vocab)
 
         mf_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
                                                       name="gmf_user_embedding")(user_inputs)
@@ -330,15 +313,8 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
         return gmf_model, mlp_model
 
     def fit(self, train_user_item_ratings, test_user_item_ratings, epochs=10, batch_size=100, n_factors=16):
-
-        self.user_ratings = np.zeros((len(self.id_to_user_id_vocab.keys()), len(self.id_to_item_id_vocab.keys())))
-
-        for i in tqdm(range(len(train_user_item_ratings))):
-            user, item, rating = train_user_item_ratings[i]
-            user_index = self.user_id_to_id_vocab[int(user)]
-            item_index = self.item_id_to_id_vocab[int(item)]
-
-            self.user_ratings[user_index, item_index] = rating
+        self.user_ratings = create_user_items_rating_matrix(train_user_item_ratings, self.user_id_to_id_vocab,
+                                                            self.item_id_to_id_vocab)
 
         train_user_item_ratings.extend(self._generate_negative_samples(train_user_item_ratings, 5))
         gmf_model, mlp_model = self._pretrain_models(train_user_item_ratings, epochs=10, n_factors=n_factors)
@@ -347,7 +323,6 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
 
         loss_object = tf.keras.losses.MeanSquaredError()
         optimizer = tf.keras.optimizers.Adam()
-
 
         train_ds = self._generate_dataset(train_user_item_ratings, batch_size)
         test_ds = self._generate_dataset(test_user_item_ratings, batch_size)
@@ -381,5 +356,5 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
         non_rated_user_movies = self.user_ratings[self.user_id_to_id_vocab[user_id], :] == 0
         recommendations = self.model.predict([user_input, item_input]).squeeze()
         recommendations_idx = np.argsort(recommendations)[::-1]
-        return [(self.id_to_item_id_vocab[i], recommendations[i]) for i in recommendations_idx if
+        return [self.id_to_item_id_vocab[i] for i in recommendations_idx if
                 non_rated_user_movies[i]][:k]

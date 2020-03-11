@@ -2,18 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 from interfaces import RecommendationMethod
-
-
-def create_id_vocab(data):
-    id_to_data_id_vocab = {}
-
-    id = 0
-    for i in data:
-        if i not in id_to_data_id_vocab.values():
-            id_to_data_id_vocab[id] = i
-            id += 1
-
-    return id_to_data_id_vocab, {v: k for k, v in id_to_data_id_vocab.items()}
+from collaborative_filtering.utils import create_id_vocab, create_user_items_rating_matrix
 
 
 class MemoryBasedCollaborativeFiltering(RecommendationMethod):
@@ -24,17 +13,10 @@ class MemoryBasedCollaborativeFiltering(RecommendationMethod):
         self.user_similarities = None
 
     def fit(self, user_items_ratings):
-        user_ratings = np.zeros((len(self.id_to_user_id_vocab.keys()), len(self.id_to_item_id_vocab.keys())))
+        self.user_ratings = create_user_items_rating_matrix(user_items_ratings, self.user_id_to_id_vocab,
+                                                            self.item_id_to_id_vocab)
 
-        for i in tqdm(range(len(user_items_ratings))):
-            user, item, rating = user_items_ratings[i]
-            user_index = self.user_id_to_id_vocab[int(user)]
-            item_index = self.item_id_to_id_vocab[int(item)]
-
-            user_ratings[user_index, item_index] = rating
-
-        self.user_ratings = user_ratings
-        self.user_similarities = cosine_similarity(user_ratings)
+        self.user_similarities = cosine_similarity(self.user_ratings)
 
     def predict(self, user_id, item_id, top_k=0):
         user_similarities = self.user_similarities[:, self.user_id_to_id_vocab[user_id]]
@@ -57,4 +39,4 @@ class MemoryBasedCollaborativeFiltering(RecommendationMethod):
 
         recommendations = user_similarities.dot(item_ratings) / (np.sum(user_similarities) + 1e-06)
         recommendations_idx = np.argsort(recommendations)[::-1]
-        return [(self.id_to_item_id_vocab[i], recommendations[i]) for i in recommendations_idx[:k] if non_rated_user_movies[i]]
+        return [self.id_to_item_id_vocab[i] for i in recommendations_idx[:k] if non_rated_user_movies[i]]
