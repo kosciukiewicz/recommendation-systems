@@ -10,7 +10,7 @@ class IndexMapping:
 
         self.user_col_id = 0
         self.movie_col_id = 1
-        self.rating_col_id = 3
+        self.rating_col_id = 2
 
     def map_external_user_id(self, external_id):
         return self.user_mapping[external_id]
