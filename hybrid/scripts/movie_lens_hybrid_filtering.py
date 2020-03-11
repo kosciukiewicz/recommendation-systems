@@ -9,9 +9,10 @@ from hybrid.predicate_hybrid_filtering import PredicateHybridFiltering
 from settings import PATH_TO_DATA
 import pandas as pd
 
+ds_name = 'ratings_small_clean.csv'
 
 def create_cf():
-    user_ratings_df = pd.read_csv(f"{PATH_TO_DATA}/raw/the-movies-dataset/ratings_small.csv")
+    user_ratings_df = pd.read_csv(f"{PATH_TO_DATA}/raw/the-movies-dataset/" + ds_name)
     user_column = 'userId'
     item_column = 'movieId'
     rating_column = 'rating'
@@ -39,7 +40,7 @@ def create_cbf():
     movie_mapping = dict(zip(data['id'].tolist(), data.index.astype(int)))
     weighted_rating_cbr = WeightedRatingCbr(data['combined'], movie_mapping)
 
-    ratings = pd.read_csv(os.path.join(dataset_path, 'ratings_small.csv'))
+    ratings = pd.read_csv(os.path.join(dataset_path, ds_name))
 
     weighted_rating_cbr.fit(ratings.values)
 
@@ -51,7 +52,7 @@ def main():
     cbf = create_cbf()
 
     dataset_path = f'{PATH_TO_DATA}/raw/the-movies-dataset'
-    ratings = pd.read_csv(os.path.join(dataset_path, 'ratings_small.csv'))
+    ratings = pd.read_csv(os.path.join(dataset_path, ds_name))
     ratings_per_user = ratings.groupby('userId').sum()
 
     # decider = lambda userId, itemId: 0 if userId <= 1 else 1
@@ -60,7 +61,7 @@ def main():
 
     hf = AverageHybridFiltering([cf, cbf], len(ratings_per_user))
 
-    recomendations = hf.get_top(1, 10)
+    recomendations = hf.get_recommendations(1, 10)
     print(recomendations)
 
 
