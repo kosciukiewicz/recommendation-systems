@@ -9,7 +9,7 @@ class HybridFiltering(interfaces.RecommendationMethod):
 
     def fit(self, filterings_args, max_len=None):
         self.max_len = max_len if max_len is not None else self.max_len
-        map(lambda x: x.fit(filterings_args), self.filterings)
+        list(map(lambda x: x.fit(filterings_args), self.filterings))
 
     @abstractmethod
     def get_recommendations(self, user_id, k=10):
