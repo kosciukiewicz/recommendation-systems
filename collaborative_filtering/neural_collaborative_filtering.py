@@ -2,27 +2,19 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
 from tqdm import tqdm
+from settings import CHECKPOINTS_DIRECTORY
+from interfaces import RecommendationMethod
+from collaborative_filtering.utils import create_id_vocab, create_user_items_rating_matrix
 
 MLP_DENSE_LAYERS_SIZE = [32, 16, 4]
 
 
-def create_id_vocab(data):
-    id_to_data_id_vocab = {}
-
-    id = 0
-    for i in data:
-        if i not in id_to_data_id_vocab.values():
-            id_to_data_id_vocab[id] = i
-            id += 1
-
-    return id_to_data_id_vocab, {v: k for k, v in id_to_data_id_vocab.items()}
-
-
-class NeuralCollaborativeFiltering:
+class NeuralCollaborativeFiltering(RecommendationMethod):
     def __init__(self, users_ids, items_ids):
         self.id_to_user_id_vocab, self.user_id_to_id_vocab = create_id_vocab(users_ids)
         self.id_to_item_id_vocab, self.item_id_to_id_vocab = create_id_vocab(items_ids)
         self.model = None
+        self.user_ratings = None
         self.train_loss = tf.keras.metrics.Mean(name='train_loss')
         self.test_loss = tf.keras.metrics.Mean(name='test_loss')
 
@@ -33,6 +25,50 @@ class NeuralCollaborativeFiltering:
     @property
     def num_items(self):
         return len(self.id_to_item_id_vocab.keys())
+
+    def load_model(self, filepath, train_user_item_ratings, n_factors):
+        user_inputs = tf.keras.Input(shape=(1,))
+        item_inputs = tf.keras.Input(shape=(1,))
+
+        self.user_ratings = create_user_items_rating_matrix(train_user_item_ratings, self.user_id_to_id_vocab,
+                                                            self.item_id_to_id_vocab)
+
+        mf_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
+                                                      name="gmf_user_embedding")(user_inputs)
+        mf_user_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mf_user_embedding)
+
+        mf_item_embedding = tf.keras.layers.Embedding(self.num_items, n_factors, input_length=1,
+                                                      name="gmf_item_embedding")(item_inputs)
+        mf_item_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mf_item_embedding)
+
+        mlp_user_embedding = tf.keras.layers.Embedding(self.num_users, n_factors, input_length=1,
+                                                       name="mlp_user_embedding")(user_inputs)
+        mlp_user_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mlp_user_embedding)
+
+        mlp_item_embedding = tf.keras.layers.Embedding(self.num_items, n_factors, input_length=1,
+                                                       name="mlp_item_embedding")(item_inputs)
+
+        mlp_item_embedding = tf.keras.layers.Reshape(target_shape=(n_factors,))(mlp_item_embedding)
+
+        gmf_dot_product = tf.keras.layers.Dot(axes=1)([mf_user_embedding, mf_item_embedding])
+        gmf_dot_product = tf.keras.layers.Flatten()(gmf_dot_product)
+
+        mlp_concatenation = tf.keras.layers.Concatenate(axis=1)(
+            [mlp_user_embedding, mlp_item_embedding])
+        mlp_concatenation = tf.keras.layers.Flatten()(mlp_concatenation)
+
+        dense_output = mlp_concatenation
+
+        for layer_size in MLP_DENSE_LAYERS_SIZE:
+            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=True,
+                                                 name=f"mlp_dense_{layer_size}")(dense_output)
+
+        neu_concat = tf.keras.layers.Concatenate(axis=1)([gmf_dot_product, dense_output])
+
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=True)(neu_concat)
+
+        self.model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
+        self.model.load_weights(filepath=filepath)
 
     def _build_simple_dot_model(self, n_factors):
         users_embedding = tf.keras.Sequential()
@@ -55,9 +91,9 @@ class NeuralCollaborativeFiltering:
         items_embedding.add(tf.keras.layers.Reshape(target_shape=(n_factors,)))
         concatenated = tf.keras.layers.Concatenate(axis=1)([users_embedding.output, items_embedding.output])
         flattened = tf.keras.layers.Flatten()(concatenated)
-        dense_1 = tf.keras.layers.Dense(64, activation=tf.nn.relu, trainable=False)(flattened)
-        dense_2 = tf.keras.layers.Dense(32, activation=tf.nn.relu, trainable=False)(dense_1)
-        dense_3 = tf.keras.layers.Dense(1, activation=tf.nn.relu, trainable=False)(dense_2)
+        dense_1 = tf.keras.layers.Dense(64, activation=tf.nn.relu, trainable=True)(flattened)
+        dense_2 = tf.keras.layers.Dense(32, activation=tf.nn.relu, trainable=True)(dense_1)
+        dense_3 = tf.keras.layers.Dense(1, activation=tf.nn.relu, trainable=True)(dense_2)
 
         model = tf.keras.models.Model([users_embedding.input, items_embedding.input], dense_3)
 
@@ -78,7 +114,7 @@ class NeuralCollaborativeFiltering:
         gmf_dot_product = tf.keras.layers.Dot(axes=1)([mf_user_embedding, mf_item_embedding])
         gmf_dot_product = tf.keras.layers.Flatten()(gmf_dot_product)
 
-        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=False, name="gmf_dense_output")(
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=True, name="gmf_dense_output")(
             gmf_dot_product)
 
         model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
@@ -103,10 +139,10 @@ class NeuralCollaborativeFiltering:
 
         dense_output = mlp_concatenation
         for layer_size in MLP_DENSE_LAYERS_SIZE:
-            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=False,
+            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=True,
                                                  name=f"mlp_dense_{layer_size}")(dense_output)
 
-        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=False, name="mlp_dense_output")(
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=True, name="mlp_dense_output")(
             dense_output)
 
         model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
@@ -151,7 +187,7 @@ class NeuralCollaborativeFiltering:
         dense_output = mlp_concatenation
 
         for layer_size in MLP_DENSE_LAYERS_SIZE:
-            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=False,
+            dense_output = tf.keras.layers.Dense(layer_size, activation=tf.nn.relu, trainable=True,
                                                  name=f"mlp_dense_{layer_size}",
                                                  weights=pretrained_mlp_model.get_layer(
                                                      f"mlp_dense_{layer_size}").get_weights())(dense_output)
@@ -168,7 +204,7 @@ class NeuralCollaborativeFiltering:
 
         new_final_biases = final_gmf_weights[1] + final_mlp_wights[1]
 
-        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=False,
+        final_dense = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid, trainable=True,
                                             weights=[0.5 * new_final_weights, 0.5 * new_final_biases])(neu_concat)
 
         model = tf.keras.models.Model([user_inputs, item_inputs], final_dense)
@@ -192,6 +228,18 @@ class NeuralCollaborativeFiltering:
         optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
         self.train_loss(loss)
+
+    def _generate_negative_samples(self, data, count_for_one_user):
+        new_data = []
+        items_ids = np.arange(0, self.user_ratings.shape[1])
+
+        for u, i, r in data:
+            non_rated_movies = self.user_ratings[self.user_id_to_id_vocab[u], :] == 0
+            ratings_to_sample = np.random.choice(items_ids[non_rated_movies], count_for_one_user)
+            for s in ratings_to_sample:
+                new_data.append((u, self.id_to_item_id_vocab[s], 0))
+
+        return new_data
 
     def _generate_dataset(self, data, batch_size):
         users_ids = np.expand_dims(np.array([self.user_id_to_id_vocab[r[0]] for r in data]), axis=1)
@@ -265,8 +313,11 @@ class NeuralCollaborativeFiltering:
         return gmf_model, mlp_model
 
     def fit(self, train_user_item_ratings, test_user_item_ratings, epochs=10, batch_size=100, n_factors=16):
+        self.user_ratings = create_user_items_rating_matrix(train_user_item_ratings, self.user_id_to_id_vocab,
+                                                            self.item_id_to_id_vocab)
 
-        gmf_model, mlp_model = self._pretrain_models(train_user_item_ratings, epochs=1, n_factors=n_factors)
+        train_user_item_ratings.extend(self._generate_negative_samples(train_user_item_ratings, 5))
+        gmf_model, mlp_model = self._pretrain_models(train_user_item_ratings, epochs=10, n_factors=n_factors)
 
         self.model = self._build_neu_mf_model(n_factors, pretrained_gmf_model=gmf_model, pretrained_mlp_model=mlp_model)
 
@@ -291,7 +342,19 @@ class NeuralCollaborativeFiltering:
                                   self.train_loss.result().numpy(),
                                   self.test_loss.result().numpy()))
 
+        self.model.save(f'{CHECKPOINTS_DIRECTORY}/model.h5')
+
     def predict(self, user_id, item_id):
         user_input = np.array([self.user_id_to_id_vocab[user_id]])
         item_input = np.array([self.item_id_to_id_vocab[item_id]])
         return self.model.predict([user_input, item_input]).squeeze().tolist()
+
+    def get_recommendations(self, user_id, k):
+        user_input = np.full((len(self.item_id_to_id_vocab.keys()), 1), fill_value=self.user_id_to_id_vocab[user_id])
+        item_input = np.expand_dims(np.arange(0, len(self.item_id_to_id_vocab.keys())), axis=1)
+
+        non_rated_user_movies = self.user_ratings[self.user_id_to_id_vocab[user_id], :] == 0
+        recommendations = self.model.predict([user_input, item_input]).squeeze()
+        recommendations_idx = np.argsort(recommendations)[::-1]
+        return [self.id_to_item_id_vocab[i] for i in recommendations_idx if
+                non_rated_user_movies[i]][:k]
