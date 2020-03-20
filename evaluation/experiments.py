@@ -27,9 +27,6 @@ def main():
     movie_ids = ratings[item_column].unique()
 
     hit_rate_ns = [30]
-    methods = [MemoryBasedCollaborativeFiltering(user_ids, movie_ids),
-               WeightedRatingCbr(data['combined'], movie_mapping),
-               SVDCollaborativeFiltering(user_ids, movie_ids)]
 
     mem_factory = lambda: MemoryBasedCollaborativeFiltering(ratings[user_column].unique(),
                                                  ratings[item_column].unique())
@@ -37,8 +34,11 @@ def main():
     predicate = lambda userId, itemId: 0 if userId <= 1 else 1
 
     methods = [
-        #WeightedRatingCbr(data['combined'], movie_mapping),
-        SVDCollaborativeFiltering(user_ids, movie_ids)
+        mem_factory(),
+        SVDCollaborativeFiltering(ratings[user_column].unique(), ratings[item_column].unique()),
+        wcr_factory(),
+        AverageHybridFiltering([mem_factory(), wcr_factory()], 50),  # lub len(ratings_per_user) zamiast 50
+        PredicateHybridFiltering([mem_factory(), wcr_factory()], predicate, len(ratings_per_user)),
     ]
 
     for n in hit_rate_ns:
