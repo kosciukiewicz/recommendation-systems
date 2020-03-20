@@ -37,12 +37,8 @@ def main():
     predicate = lambda userId, itemId: 0 if userId <= 1 else 1
 
     methods = [
-        mem_factory(),
-        SVDCollaborativeFiltering(ratings[user_column].unique(),
-                                         ratings[item_column].unique()),
-        wcr_factory(),
-        AverageHybridFiltering([mem_factory(), wcr_factory()], len(ratings_per_user)),
-        PredicateHybridFiltering([mem_factory(), wcr_factory()], predicate, len(ratings_per_user)),
+        #WeightedRatingCbr(data['combined'], movie_mapping),
+        SVDCollaborativeFiltering(user_ids, movie_ids)
     ]
 
     for n in hit_rate_ns:
