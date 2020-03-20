@@ -6,3 +6,5 @@
 data/raw/the-movies-dataset/
 
 user_settings.py
+
+*.h5

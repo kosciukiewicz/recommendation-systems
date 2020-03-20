@@ -2,10 +2,9 @@ import os
 
 from sklearn.model_selection import train_test_split
 from collaborative_filtering.memory_based_collaborative_filtering import MemoryBasedCollaborativeFiltering
-from content_based_recomendation.scripts.movie_lens_features_extractor import FeaturesExtractor
+from utils.features_extraction.movie_lens_features_extractor import FeaturesExtractor
 from content_based_recomendation.weigted_rating_cbr import WeightedRatingCbr
 from hybrid.average_hybrid_filtering import AverageHybridFiltering
-from hybrid.predicate_hybrid_filtering import PredicateHybridFiltering
 from settings import PATH_TO_DATA
 import pandas as pd
 

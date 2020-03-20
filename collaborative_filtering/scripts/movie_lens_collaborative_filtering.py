@@ -10,6 +10,7 @@ from collaborative_filtering.neural_collaborative_filtering import NeuralCollabo
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 
+
 def get_movie_id_to_feature_mapping(movies_metadata_df):
     mapping = {}
     for i, row in movies_metadata_df.iterrows():
@@ -106,6 +107,7 @@ def count_mse(method, test_data):
     scaler.fit(np.array([y_true, y_pred]).transpose())
     data = scaler.transform(np.array([y_true, y_pred]).transpose())
     print(mean_squared_error(y_true=data[:, 0], y_pred=data[:, 1]))
+
 
 if __name__ == '__main__':
     main()
