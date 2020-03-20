@@ -1,8 +1,6 @@
 from settings import PATH_TO_DATA
-from content_based_recomendation.scripts.movie_lens_features_extractor import FeaturesExtractor
-from content_based_recomendation.keywords_based_cbr import KeywordsBasedCbr
+from utils.features_extraction.movie_lens_features_extractor import FeaturesExtractor
 from content_based_recomendation.weigted_rating_cbr import WeightedRatingCbr
-import numpy as np
 import pandas as pd
 import os
 

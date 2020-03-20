@@ -1,5 +1,4 @@
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from interfaces import RecommendationMethod
 from content_based_recomendation.scripts.index_mapping import IndexMapping
