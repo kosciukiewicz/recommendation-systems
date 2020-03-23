@@ -61,13 +61,7 @@ def main():
     movies_features = cv.fit_transform(movies_data['combined']).toarray().astype(float)
     indexer = Indexer(user_ids=user_ratings_df[user_column].unique(), movies_ids=movies_data['id'])
 
-    for train_df, test_df in user_leave_on_out(user_ratings_df, timestamp_column="timestamp"):
-        user_features = get_weighted_movies_user_features(train_df, indexer, movies_features)
-
-        train_data = map_df_to_model_input(train_df, movies_features, user_features, indexer)
-        test_data = map_df_to_model_input(test_df, movies_features, user_features, indexer)
-
-    train_df, test_df = list(user_leave_on_out(user_ratings_df, make_user_folds=False))[0]
+    train_df, test_df = list(user_leave_on_out(user_ratings_df, make_user_folds=False, rating_threshold=5.0))[0]
 
     print(train_df)
 

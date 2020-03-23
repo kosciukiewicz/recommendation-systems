@@ -7,9 +7,10 @@ item_column = 'movieId'
 rating_column = 'rating'
 
 
-def user_leave_on_out(user_ratings_df, timestamp_column=None, make_user_folds=True):
+def user_leave_on_out(user_ratings_df, timestamp_column=None, make_user_folds=True, rating_threshold=None):
     """
     Make leave one out folds for each user
+    :param rating_threshold: threshold for getting only positives user ratings
     :param user_ratings_df: default user items ratings pandas dataframe
     :param timestamp_column: timestamp column name in user_ratings_df for setting last reting as test rating
      If None setting random user rating as test rating
@@ -22,6 +23,15 @@ def user_leave_on_out(user_ratings_df, timestamp_column=None, make_user_folds=Tr
     test_indices = []
     for user_id in user_ids:
         user_ratings = user_ratings_df[user_ratings_df[user_column] == user_id]
+
+        if rating_threshold is not None:
+            thresholded_user_ratings = user_ratings[user_ratings[rating_column] >= rating_threshold]
+
+            while len(thresholded_user_ratings) == 0:
+                rating_threshold -= 0.5
+                thresholded_user_ratings = user_ratings[user_ratings[rating_column] >= rating_threshold]
+
+            user_ratings = thresholded_user_ratings
 
         if timestamp_column is not None:
             user_ratings = user_ratings.sort_values(by=timestamp_column)
