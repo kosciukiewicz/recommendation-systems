@@ -22,6 +22,8 @@ class FeaturesExtractor:
         self.movies_data_files = ['keywords.csv', 'credits.csv',
                                   self.movies_metadata_clean]
 
+        self.messages_to_remove = {'overview': 'No overview found.'}
+
     def run(self, unique=False):
         if not os.path.exists(os.path.join(self.dataset_path,
                                            self.movies_metadata_clean)):
@@ -67,6 +69,8 @@ class FeaturesExtractor:
             lambda value: self.process_dict(value, self.clean_elements))
 
     def process_text_columns(self, data):
+        for col_name, message in self.messages_to_remove.items():
+            data[col_name] = data[col_name].str.replace(message, '')
         data['overview'] = self.process_text_column(data['overview'], 7)
         data['tagline'] = self.process_text_column(data['tagline'], 3)
 
