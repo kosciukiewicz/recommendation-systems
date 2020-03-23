@@ -5,6 +5,10 @@
 
 data/raw/the-movies-dataset/
 
+data/
+
 user_settings.py
 
 *.h5
+
+*/.ipynb_checkpoints

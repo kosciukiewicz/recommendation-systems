@@ -6,6 +6,8 @@ def _generate_mapping(ids):
         if i not in id_to_data_id_vocab.values():
             id_to_data_id_vocab[id] = i
             id += 1
+        else:
+            print(i)
 
     return id_to_data_id_vocab, {v: k for k, v in id_to_data_id_vocab.items()}
 
