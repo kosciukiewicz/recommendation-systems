@@ -45,7 +45,7 @@ class FeaturesExtractor:
                for f_name in self.movies_data_files]
         data = reduce(lambda df1, df2: pd.merge(df1, df2, on='id', how='outer'),
                       dfs)
-        data = data[self.cols]
+        data = data[self.cols].groupby('id').first().reset_index(level=0)
 
         if small:
             data = self.reduce_num_of_movies(data)
