@@ -9,6 +9,7 @@ from tqdm import tqdm
 from clustering.kmeans_item_based import KmeansItemBased
 from clustering.kmeans_user_based import KmeansUserBased
 from evaluation.scripts.run_deep_learning_experiments import get_movie_id_to_feature_mapping, map_df_to_model_input
+from utils.evaluation.metrics import hit_rate
 from utils.features_extraction.movie_lens_features_extractor import FeaturesExtractor
 from utils.id_indexer import Indexer
 from utils.evaluation.test_train_split import user_leave_on_out
@@ -160,6 +161,8 @@ def kmeans_item_based():
                                              timestamp_column="timestamp")
 
     print("Testing...")
+    iterations = 0
+    all_hits = 0
     for index, row in tqdm(df_dataset.iterrows()):
         user_id = row["user_id"]
         user_matrix = row["user_matrix"]
@@ -168,7 +171,7 @@ def kmeans_item_based():
         test_movie_id = row["test_movie_ids"]
         test_rating = row["test_ratings"]
 
-        recommendations = method.get_recommendations(user_matrix, train_movie_ids, train_ratings, top_n=10)
+        recommendations = method.get_recommendations(user_matrix, train_movie_ids, train_ratings, top_n=100)
 
         user_rated_movies = user_ratings_df[user_ratings_df[user_column] == user_id] \
             .sort_values(rating_column, ascending=False)[[item_column]] \
@@ -189,6 +192,16 @@ def kmeans_item_based():
         print("Recommended movies: ")
         for movie_id in recommended_movies:
             print(movie_id_features_dict[movie_id])
+
+        hits = hit_rate(gt_items_idx=[test_movie_id], predicted_items_idx=recommendations)
+
+        all_hits += hits
+        iterations += 1
+
+    if all_hits > 0:
+        print(f"{method.__class__}: {all_hits}/{iterations}")
+    print(f"Total hits: {all_hits}")
+    print(f"Total iterations: {iterations}")
 
 
 if __name__ == '__main__':

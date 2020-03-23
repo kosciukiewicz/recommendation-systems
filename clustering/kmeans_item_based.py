@@ -11,7 +11,7 @@ class KmeansItemBased(RecommendationMethod):
 
     def fit(self, movies_features):
         self.movies_features = movies_features
-        self.kmeans = KMeans(n_clusters=10, init="k-means++", random_state=0, n_jobs=-1,
+        self.kmeans = KMeans(n_clusters=50, init="k-means++", random_state=0, n_jobs=-1,
                              n_init=10, max_iter=500).fit(movies_features)
 
     def get_recommendations(self, user_features, train_movie_ids, user_ratings, top_n):
@@ -38,13 +38,6 @@ class KmeansItemBased(RecommendationMethod):
     def _sample_from_cluster(self, centroid_id):
         indices = np.argwhere(self.kmeans.labels_ == centroid_id).squeeze()
         return np.random.choice(indices, 1)[0]
-
-    def predict(self, user_features, movie_features):
-        centroid_features = self.kmeans.cluster_centers_[self.kmeans.predict(user_features.reshape(1, -1))[0]]
-        rating = np.multiply(centroid_features, movie_features)
-        rating[rating == 0] = np.nan
-        rating = np.nanmean(rating) * 5
-        return rating
 
 
 
