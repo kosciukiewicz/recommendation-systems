@@ -73,12 +73,14 @@ class MovieFeaturesDeepLearningMethod(RecommendationMethod):
         self.model = self._build_model()
         self.model.load_weights(filepath=filepath)
 
-    def get_recommendations(self, user, movies, k=None):
-        user_input = np.repeat(np.expand_dims(user, axis=0), movies.shape[0], axis=0)
-        movies_input = movies
+    def get_recommendations(self, user_id, k=None):
+        user = self.user_features[self.indexer.get_user_internal_id(user_id), :]
+        user_input = np.repeat(np.expand_dims(user, axis=0), self.movies_features.shape[0], axis=0)
+        movies_input = self.movies_features
 
         recommendations = self.model.predict([user_input, movies_input]).squeeze()
         recommendations_idx = np.argsort(recommendations)[::-1]
+        recommendations_idx = [self.indexer.get_movie_id(internal_id) for internal_id in recommendations_idx]
         return recommendations_idx[:k] if k is not None else recommendations_idx
 
     def _generate_negative_samples(self, data, count_for_one_user):
