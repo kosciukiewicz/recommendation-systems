@@ -18,7 +18,7 @@ def user_leave_on_out(user_ratings_df, timestamp_column=None, make_user_folds=Tr
      If False returning one train dataset and one test set with oe rating for each user
     :return:
     """
-
+    random.seed(30)
     user_ids = user_ratings_df[user_column].unique()
     test_indices = []
     for user_id in user_ids:
