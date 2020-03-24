@@ -41,6 +41,9 @@ class AssociationRulesRecommendation(RecommendationMethod):
                     selected_movies + consequents[:n - len(selected_movies)])
             else:
                 selected_movies += consequents
+        return selected_movies + np.delete(
+            np.arange(self.users_ratings_matrix.shape[1]),
+            watched_movies)[:n - len(selected_movies)]
 
     def map_ratings_to_internal_representation(self, ratings):
         return [(self.indexer.get_user_internal_id(user_id),
