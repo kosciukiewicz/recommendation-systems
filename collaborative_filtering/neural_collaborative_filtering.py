@@ -281,7 +281,7 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
         train_ds = self._generate_dataset(train_user_item_ratings, batch_size)
 
         loss_object = tf.keras.losses.BinaryCrossentropy()
-        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
+        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.01)
 
         done_epochs = 0
         prev_loss = float('inf')
@@ -303,7 +303,7 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
         self.train_loss.reset_states()
 
         loss_object = tf.keras.losses.BinaryCrossentropy()
-        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.001)
+        optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.01)
 
         done_epochs = 0
         prev_loss = float('inf')
@@ -329,8 +329,8 @@ class NeuralCollaborativeFiltering(RecommendationMethod):
     def fit(self, train_user_items_ratings, test_user_items_ratings=None, batch_size=20, epochs=20, early_stopping=-1):
         self.user_ratings = create_user_items_rating_matrix_w_indexer(train_user_items_ratings, self.indexer)
 
-        #train_user_items_ratings.extend(self._generate_negative_samples(train_user_items_ratings, 1))
-        gmf_model, mlp_model = self._pretrain_models(train_user_items_ratings, epochs=30, error_delta=0.0001)
+        train_user_items_ratings.extend(self._generate_negative_samples(train_user_items_ratings, 1))
+        gmf_model, mlp_model = self._pretrain_models(train_user_items_ratings, epochs=100, error_delta=0.0001)
 
         self.model = self._build_neu_mf_model(pretrained_gmf_model=gmf_model, pretrained_mlp_model=mlp_model)
 

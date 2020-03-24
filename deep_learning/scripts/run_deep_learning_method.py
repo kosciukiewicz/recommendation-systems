@@ -43,8 +43,7 @@ def main():
     user_ratings_df = user_ratings_df[user_ratings_df[item_column].isin(movie_id_features_dict.keys())]
 
     train_ratings_df, test_ratings_df = \
-        list(user_leave_on_out(user_ratings_df, timestamp_column='timestamp', make_user_folds=False,
-                               rating_threshold=3.5))[0]
+    list(user_leave_on_out(user_ratings_df, timestamp_column="timestamp", make_user_folds=False))[0]
 
     movies_features, user_features, indexer = get_movies_model_features(user_ratings_df, train_ratings_df, dataset_path,
                                                                         path_to_saved_features)
@@ -52,36 +51,36 @@ def main():
     train_data = map_df_to_model_input(train_ratings_df)
     test_data = map_df_to_model_input(test_ratings_df)
 
-    # method = NeuralCollaborativeFiltering(indexer=indexer, n_factors=64, model_name="neucf_64_w_4_0_threshold")
+    #method = NeuralCollaborativeFiltering(indexer=indexer, n_factors=64, model_name="neucf_64_w_4_0_threshold")
 
     method = MovieFeaturesDeepLearningMethod(indexer=indexer, movies_features=movies_features,
-                                             user_features=user_features, model_name="movies_features_w_4_0_threshold")
+                                              user_features=user_features, model_name="movies_features_w_4_0_threshold")
 
-    # method.fit(train_data, test_data, batch_size=25, epochs=50, early_stopping=3)
+    method.fit(train_data, test_data, batch_size=25, epochs=50, early_stopping=5)
 
     # method.load_model(filepath=os.path.join(PATH_TO_PROJECT, "collaborative_filtering", "saved_models", "neucf_64_w_4_0_threshold.h5"), train_user_item_ratings=train_data)
-    method.load_model(filepath=os.path.join(PATH_TO_PROJECT, "deep_learning", "saved_models", "movies_features_w_4_0_threshold.h5"))
+    # method.load_model(filepath=os.path.join(PATH_TO_PROJECT, "deep_learning", "saved_models", "movies_features_w_4_0_threshold.h5"))
 
-    for user, movie, rating in test_data[:10]:
-        recommendations = method.get_recommendations(user_id=user)
-
-        user_rated_movies = train_ratings_df[train_ratings_df[user_column] == user] \
-            .sort_values(rating_column, ascending=False)[[item_column]] \
-            .values.squeeze()
-
-        recommended_movies = [movie_internal_id for movie_internal_id in recommendations if
-                              movie_internal_id not in user_rated_movies][:10]
-
-        print("Rated movies: ")
-        for movie_id in user_rated_movies:
-            print(movie_id_features_dict[movie_id])
-
-        print("Recommended movies: ")
-        for movie_id in recommended_movies:
-            print(movie_id_features_dict[movie_id])
-
-        print("Test movie rating: ")
-        print(movie_id_features_dict[movie], rating)
+    # for user, movie, rating in test_data[:10]:
+    #     recommendations = method.get_recommendations(user_id=user)
+    #
+    #     user_rated_movies = train_ratings_df[train_ratings_df[user_column] == user] \
+    #         .sort_values(rating_column, ascending=False)[[item_column]] \
+    #         .values.squeeze()
+    #
+    #     recommended_movies = [movie_internal_id for movie_internal_id in recommendations if
+    #                           movie_internal_id not in user_rated_movies][:10]
+    #
+    #     print("Rated movies: ")
+    #     for movie_id in user_rated_movies:
+    #         print(movie_id_features_dict[movie_id])
+    #
+    #     print("Recommended movies: ")
+    #     for movie_id in recommended_movies:
+    #         print(movie_id_features_dict[movie_id])
+    #
+    #     print("Test movie rating: ")
+    #     print(movie_id_features_dict[movie], rating)
 
 
 if __name__ == '__main__':
