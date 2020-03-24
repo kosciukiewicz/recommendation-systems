@@ -25,3 +25,17 @@ def create_user_items_rating_matrix(data, user_id_to_id_mapping, item_id_to_id_m
         user_ratings[user_index, item_index] = rating
 
     return user_ratings
+
+
+def create_user_items_rating_matrix_w_indexer(data, indexer):
+    user_ratings = np.zeros(
+        (len(indexer.user_id_to_internal_id_dict.values()), len(indexer.movie_id_to_internal_id_dict.values())))
+
+    for i in tqdm(range(len(data))):
+        user, item, rating = data[i]
+        user_index = indexer.get_user_internal_id(user)
+        item_index = indexer.get_movie_internal_id(item)
+
+        user_ratings[user_index, item_index] = rating
+
+    return user_ratings
