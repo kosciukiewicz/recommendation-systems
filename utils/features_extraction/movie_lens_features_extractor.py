@@ -5,6 +5,7 @@ import string
 from ast import literal_eval
 from rake_nltk import Rake
 import operator
+from warnings import warn
 
 
 class FeaturesExtractor:
@@ -21,8 +22,20 @@ class FeaturesExtractor:
         self.movies_metadata_clean = 'movies_metadata_clean.csv'
         self.movies_data_files = ['keywords.csv', 'credits.csv',
                                   self.movies_metadata_clean]
+        self.features_out = 'movies_features.csv'
 
         self.messages_to_remove = {'overview': 'No overview found.'}
+
+    def save(self, data=None, override=False):
+        path = os.path.join(self.dataset_path, self.features_out)
+        if os.path.exists(path) and not override:
+            warn('Saved features file already exists and cannot be override.')
+        else:
+            data = data if data else self.run()
+            data.to_csv(path, index=False)
+
+    def load(self):
+        return pd.read_csv(os.path.join(self.dataset_path, self.features_out))
 
     def run(self, unique=False):
         if not os.path.exists(os.path.join(self.dataset_path,
