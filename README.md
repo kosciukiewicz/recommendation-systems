@@ -44,3 +44,35 @@ We implemented and evaluated two deep learning methods:
 | :-------------: |:-------------:| :-----:|
 | Newest rating     | 56/671 | 26/671 |
 | Newest positive rating      | 141/671       |   51/671 |
+
+## Kmeans clustering
+
+All kmeans are item based. Kmeans recommendation system defines user with features of movies that he or she watched.
+It consists a matrix n x m, where n is number of rated movies by user and m is feature vector length.
+
+Task: recommend top n movies.
+
+Kmeans_1:
+1. Assign every movie rated by user to its cluster.
+2. Sample n clusters from previous step with probability distribution defined by user ratings.
+3. Sample movies from chosen clusters. Every movie with uniform distribution within a cluster.
+4. Remove duplicated recommendations and remove movies watched by user.
+5. If number of recommended movies is lower than n, return to step 3.
+
+Kmeans_2:
+In sampling clusters (point 2.), every cluster probability is exponential depending on user rating for movie.
+
+Kmeans_3:
+1. Assign every movie rated by user to its cluster.
+2. Rate every cluster by counting mean of user's ratings inside that cluster. 
+3. Sort clusters according to their ratings. In case of two clusters have the same rating, the cluster with more ratings is preferred.
+4. Choose cluster with the highest rating.
+5. Get all movies from the cluster. Sorted them by their popularity.
+6. Remove duplicated recommendations and remove movies watched by user.
+7. If number of recommended movies is lower than n, return to step 4 and select next cluster.
+
+#### Results
+|                        | Kmeans_1 | Kmeans_2 | Kmeans_3 |
+|------------------------|----------|----------|----------|
+| Newest rating          | 1.4/671  |  2.1/671 | 7/671    |
+| Newest positive rating | 1.7/671  |  1.7/671 | 5/671    |
