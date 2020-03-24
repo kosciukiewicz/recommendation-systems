@@ -12,3 +12,4 @@ user_settings.py
 *.h5
 
 */.ipynb_checkpoints
+/dataset
