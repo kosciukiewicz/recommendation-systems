@@ -7,13 +7,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 
 from clustering.kmeans_item_based import KmeansItemBased
-from clustering.kmeans_user_based import KmeansUserBased
 from deep_learning.utils import get_movie_id_to_feature_mapping
-from evaluation.scripts.run_deep_learning_experiments import map_df_to_model_input
 from utils.evaluation.metrics import hit_rate
 from utils.features_extraction.movie_lens_features_extractor import FeaturesExtractor
 from utils.id_indexer import Indexer
-from utils.evaluation.test_train_split import user_leave_on_out
 from settings import PATH_TO_DATA
 
 user_column = 'userId'

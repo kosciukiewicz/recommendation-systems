@@ -53,6 +53,7 @@ It consists a matrix n x m, where n is number of rated movies by user and m is f
 Task: recommend top n movies.
 
 Kmeans_1:
+
 1. Assign every movie rated by user to its cluster.
 2. Sample n clusters from previous step with probability distribution defined by user ratings.
 3. Sample movies from chosen clusters. Every movie with uniform distribution within a cluster.
@@ -60,9 +61,11 @@ Kmeans_1:
 5. If number of recommended movies is lower than n, return to step 3.
 
 Kmeans_2:
+
 In sampling clusters (point 2.), every cluster probability is exponential depending on user rating for movie.
 
 Kmeans_3:
+
 1. Assign every movie rated by user to its cluster.
 2. Rate every cluster by counting mean of user's ratings inside that cluster. 
 3. Sort clusters according to their ratings. In case of two clusters have the same rating, the cluster with more ratings is preferred.
