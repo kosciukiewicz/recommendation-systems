@@ -4,6 +4,8 @@ from settings import PATH_TO_DATA
 from utils.features_extraction.movie_lens_features_extractor import FeaturesExtractor
 from collaborative_filtering.memory_based_collaborative_filtering import MemoryBasedCollaborativeFiltering
 from collaborative_filtering.svd_collaborative_filtering import SVDCollaborativeFiltering
+from hybrid.average_hybrid_filtering import AverageHybridFiltering
+from hybrid.predicate_hybrid_filtering import PredicateHybridFiltering
 from utils.evaluation.test_train_split import user_leave_on_out
 import pandas as pd
 import os
@@ -19,27 +21,34 @@ def main():
 
     features_extractor = FeaturesExtractor(dataset_path)
     data = features_extractor.run()
-    movie_mapping = dict(zip(data['id'].tolist(), data.index.astype(int)))
+    data = data.drop_duplicates(subset=['id'])
+    movie_mapping = dict(zip(data['id'].tolist(), range(len(data))))
 
     user_ids = ratings[user_column].unique()
     movie_ids = ratings[item_column].unique()
 
     wcr_factory = lambda: WeightedRatingCbr(data['combined'], movies_mapping=movie_mapping)
+    mem_factory = lambda: MemoryBasedCollaborativeFiltering(user_ids, movie_ids)
+    svd_factory = lambda: SVDCollaborativeFiltering(user_ids, movie_ids)
 
     methods = [
-        #MemoryBasedCollaborativeFiltering(user_ids, movie_ids),
-        SVDCollaborativeFiltering(user_ids, movie_ids),
-        wcr_factory()
+        #mem_factory(),
+        #svd_factory(),
+        wcr_factory(),
+        AverageHybridFiltering([mem_factory(), wcr_factory()], 50)
     ]
 
     n = 30
 
+    results = {}
+
     for method in methods:
         iterations = 0
         all_hits = 0
-        for train_df, test_df in user_leave_on_out(ratings):
+        for train_df, test_df in user_leave_on_out(ratings, timestamp_column="timestamp", rating_threshold=4.0):
+            print(iterations)
             train_ratings = train_df.values[:, :3]
-            user_id, item_id, ratings = test_df.values[:, :3][0]
+            user_id, item_id, rating = test_df.values[:, :3][0]
             method.fit(train_ratings)
             pred_ids = method.get_recommendations(user_id, n)
             hits = hit_rate(gt_items_idx=[item_id.astype(int)], predicted_items_idx=pred_ids)
@@ -53,6 +62,9 @@ def main():
 
             if hits > 0:
                 print(f"{method.__class__}: {all_hits}/{iterations}")
+
+        results[method.__class__] = all_hits
+        print(results)
 
 
 if __name__ == '__main__':

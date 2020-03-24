@@ -1,4 +1,4 @@
-# PWG-recommendation-systems
+# PWGŁ-recommendation-systems
 
 Project created for Recommendation Systems classes which we take as part of our final year od Data Science studies on Wrocław University of Science and Technology. Main contributors to this project are Piotr, Gabriela and Witold. Below there are descriptions of main tasks and our solutions.
 
@@ -11,6 +11,9 @@ We used popular [MovieLens](https://www.kaggle.com/rounakbanik/the-movies-datase
 
 To evaluate implemented methods we use HitRate metric evaluation using LeaveOneOut (LOO) split for train and test dataset. Our LOO method splits to number of folds that equals number of users - it chooses one rating for each user as test example for evaluation. The test rating can be the last one for each user (if timestamp feature is provided) or thresholded to be "positive" rating (then HitRate can measure positives hits in recommendation given by implemented methods).
 
+In results section of each method we tried to evaluate hit rate metric on two splits - one with one newest rating for each user and one with newest positive rating for each user (ratings higher or equal 4.0). These splits are named respectively
+**Newest rating** and **Newest positive rating**.
+
 ## Work methodology
 
 To track our tasks we use kanban board on [Trello](https://trello.com/). For our calls we use own channel on [Discord](https://discordapp.com/). In our project, to manage methods, datasets and pipilines we use [DataVersionControl](https://dvc.org/).
@@ -20,6 +23,12 @@ To track our tasks we use kanban board on [Trello](https://trello.com/). For our
 
 We implemented user-based collaborative filtering methods using classic user ratings matrx based method (ClassicMemoryBasedCollaborativeFiltering) and SVD user ratings matrix factorisation method (SVDCollaborativeFiltering). 
 
+#### Results
+
+| Test set        | ClassicMemoryBasedCF (hits)      | SVDCF (hits)  |
+| :-------------: |:-------------:| :-----:|
+| Newest rating     | 100/671 | 19/671 |
+| Newest positive rating      | 112/671       |   14/671 |
 
 ## Deep Learning Methods
 
@@ -29,4 +38,9 @@ We implemented and evaluated two deep learning methods:
 
 * Neural Content Based Recommendation - simple concatenation method based on same movies features that we used in our Content Based Recommendation
 
-#### NeuCF
+#### Results
+
+| Test set        | NeuCf (hits)       | Neural Content Based (hits)  |
+| :-------------: |:-------------:| :-----:|
+| Newest rating     | 56/671 | 26/671 |
+| Newest positive rating      | 141/671       |   51/671 |
