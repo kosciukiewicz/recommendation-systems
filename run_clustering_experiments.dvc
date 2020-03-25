@@ -1,0 +1,29 @@
+md5: d09678ee619ad958b731451f67292995
+cmd: python evaluation/scripts/run_clustering_experiments.py
+deps:
+- md5: edb4d8173181f21d5f6573742ce1de1c
+  path: evaluation/scripts/run_clustering_experiments.py
+- md5: 355acab208f5585fd279c9147f8f0350.dir
+  path: dataset
+- md5: eea90dffb0b63a8a5cabdff2cb84fe47.dir
+  path: clustering
+- md5: 0d922879691335de5079cecf52a52df8.dir
+  path: collaborative_filtering
+- md5: ef78c70597b682960c666a7f9734232b.dir
+  path: content_based_recomendation
+- md5: ed456204f499ee14691dc86baa154f07.dir
+  path: hybrid
+- md5: 3f0b3450bd454a4b2f28b99b41fcb8cb.dir
+  path: deep_learning
+- md5: 979a2ee82d026442f432f4254a27b052.dir
+  path: data
+- md5: 4cfc2400550789f59eccee40c53a78c0.dir
+  path: utils
+- md5: 7156a3423242d73daad6a9c637a5bd20.dir
+  path: sequence
+outs:
+- md5: 8d777f385d3dfec8815d20f7496026dc
+  path: results/run_clustering_experiments.csv
+  cache: true
+  metric: false
+  persist: false
