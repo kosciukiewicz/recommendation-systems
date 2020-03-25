@@ -77,5 +77,5 @@ Kmeans_3:
 #### Results
 |                        | Kmeans_1 | Kmeans_2 | Kmeans_3 |
 |------------------------|----------|----------|----------|
-| Newest rating          | 1.4/671  |  2.1/671 | 7/671    |
-| Newest positive rating | 1.7/671  |  1.7/671 | 5/671    |
+| Newest rating          | 7.3/671  |  4.9/671 | 14/671    |
+| Newest positive rating | 5.2/671  |  1.7/671 | 9/671    |

@@ -170,68 +170,69 @@ def kmeans_item_based():
     indexer = Indexer(user_ids=user_ratings_df[user_column].unique(), movies_ids=movies_data['id'])
 
     results = list()
-    for n_centroids in [5, 10, 20, 50, 100]:
-        method = KmeansItemBased(cluster_selection="exponential",
-                                 item_selection="random")
-        print("Fitting kmeans...")
-        method.fit(movies_features, n_clusters=n_centroids,
-                   popularity=prepare_popularities(movies_metadata, movies_data))
+    # for n_centroids in [5, 10, 20, 50, 100]:
+    n_centroids = 50
+    method = KmeansItemBased(cluster_selection="random",
+                             item_selection="popularity")
+    print("Fitting kmeans...")
+    method.fit(movies_features, n_clusters=n_centroids,
+               popularity=prepare_popularities(movies_metadata, movies_data))
 
-        df_dataset = create_kmeans_item_based_input_df(user_ratings_df, movies_features, indexer,
-                                                       timestamp_column="timestamp",
-                                                       rating_threshold=None)
+    df_dataset = create_kmeans_item_based_input_df(user_ratings_df, movies_features, indexer,
+                                                   timestamp_column="timestamp",
+                                                   rating_threshold=None)
 
-        print("Testing...")
-        iterations = 0
-        all_hits = 0
+    print("Testing...")
+    iterations = 0
+    all_hits = 0
 
-        for i in range(10):
-            for index, row in tqdm(df_dataset.iterrows()):
-                user_id = row["user_id"]
-                user_matrix = row["user_matrix"]
-                train_movie_ids = row["train_movie_ids"]
-                train_ratings = row["train_ratings"]
-                test_movie_id = row["test_movie_ids"]
-                test_rating = row["test_ratings"]
+    for i in range(10):
+        for index, row in tqdm(df_dataset.iterrows()):
+            user_id = row["user_id"]
+            user_matrix = row["user_matrix"]
+            train_movie_ids = row["train_movie_ids"]
+            train_ratings = row["train_ratings"]
+            test_movie_id = row["test_movie_ids"]
+            test_rating = row["test_ratings"]
 
-                recommendations = method.get_recommendations(user_matrix, train_movie_ids, train_ratings, top_n=10)
+            recommendations = method.get_recommendations(user_matrix, train_movie_ids, train_ratings, top_n=30)
 
-                user_rated_movies = user_ratings_df[user_ratings_df[user_column] == user_id] \
-                    .sort_values(rating_column, ascending=False)[[item_column]] \
-                    .values.squeeze()
+            user_rated_movies = user_ratings_df[user_ratings_df[user_column] == user_id] \
+                .sort_values(rating_column, ascending=False)[[item_column]] \
+                .values.squeeze()
 
-                user_rated_movies_ratings = user_ratings_df[user_ratings_df[user_column] == user_id] \
-                    .sort_values(rating_column, ascending=False)[[rating_column]] \
-                    .values.squeeze()
+            user_rated_movies_ratings = user_ratings_df[user_ratings_df[user_column] == user_id] \
+                .sort_values(rating_column, ascending=False)[[rating_column]] \
+                .values.squeeze()
 
-                recommended_movies = [indexer.get_movie_id(movie_internal_id) for movie_internal_id in
-                                      recommendations]
+            recommended_movies = [indexer.get_movie_id(movie_internal_id) for movie_internal_id in
+                                  recommendations]
 
-                print(f"Test movie: {movie_id_features_dict[test_movie_id]}, rating: {test_rating}")
+            print(f"Test movie: {movie_id_features_dict[test_movie_id]}, rating: {test_rating}")
 
-                print("Rated movies: ")
-                for movie_id, rating in zip(user_rated_movies, user_rated_movies_ratings):
-                    print(movie_id_features_dict[movie_id], f"rating: {rating}")
+            print("Rated movies: ")
+            for movie_id, rating in zip(user_rated_movies, user_rated_movies_ratings):
+                print(movie_id_features_dict[movie_id], f"rating: {rating}")
 
-                print("Recommended movies: ")
-                for movie_id in recommended_movies:
-                    print(movie_id_features_dict[movie_id])
+            print("Recommended movies: ")
+            for movie_id in recommended_movies:
+                print(movie_id_features_dict[movie_id])
 
-                hits = hit_rate(gt_items_idx=[test_movie_id], predicted_items_idx=recommendations)
+            hits = hit_rate(gt_items_idx=[test_movie_id], predicted_items_idx=recommendations)
 
-                all_hits += hits
-                iterations += 1
+            all_hits += hits
+            iterations += 1
 
-        if all_hits > 0:
-            print(f"{method.__class__}: {all_hits}/{iterations}")
-            print(f"Percentage-wise: {all_hits / iterations}")
-        print(f"Total hits: {all_hits}")
-        print(f"Total iterations: {iterations}")
+    if all_hits > 0:
+        print(f"{method.__class__}: {all_hits}/{iterations}")
+        print(f"Percentage-wise: {all_hits / iterations}")
+    print(f"Total hits: {all_hits}")
+    print(f"Total iterations: {iterations}")
 
-        results.append([n_centroids, None, all_hits / 10.0])
+    results.append([n_centroids, None, all_hits / 10.0])
 
-        for row in results:
-            print(row)
+    for row in results:
+        print(row)
 
 
 if __name__ == '__main__':
