@@ -1,6 +1,6 @@
 # PWGŁ-recommendation-systems
 
-Project created for Recommendation Systems classes which we take as part of our final year od Data Science studies on Wrocław University of Science and Technology. Main contributors to this project are Piotr, Gabriela and Witold. Below there are descriptions of main tasks and our solutions.
+Project created for Recommendation Systems classes which we take as part of our final year od Data Science studies on Wrocław University of Science and Technology. Main contributors to this project are Piotr, Gabriela, Łukasz and Witold. Below there are descriptions of main tasks and our solutions.
 
 
 ## Dataset
@@ -52,7 +52,7 @@ It consists a matrix n x m, where n is number of rated movies by user and m is f
 
 Task: recommend top n movies.
 
-Kmeans_1:
+**Kmeans_1:**
 
 1. Assign every movie rated by user to its cluster.
 2. Sample n clusters from previous step with probability distribution defined by user ratings.
@@ -60,11 +60,11 @@ Kmeans_1:
 4. Remove duplicated recommendations and remove movies watched by user.
 5. If number of recommended movies is lower than n, return to step 3.
 
-Kmeans_2:
+**Kmeans_2:**
 
 In sampling clusters (point 2.), every cluster probability is exponential depending on user rating for movie.
 
-Kmeans_3:
+**Kmeans_3:**
 
 1. Assign every movie rated by user to its cluster.
 2. Rate every cluster by counting mean of user's ratings inside that cluster. 
@@ -79,3 +79,27 @@ Kmeans_3:
 |------------------------|----------|----------|----------|
 | Newest rating          | 7.3/671  |  4.9/671 | 14/671    |
 | Newest positive rating | 5.2/671  |  1.7/671 | 9/671    |
+
+## Content Based Recommendation
+
+We implemented content based method which uses user profile matrix and movies matrix to recommend best suited movies based on theirs features (WeightedRatingCbr). Features are extracted from columns such as keywords, cast, genres, tagline and overwiev. If specified column does not contain keywords we use Rake to extract thoes keywords from plain text. Finally we construst feature vector with usage of Bag Of Words model.
+
+#### Results
+
+| Test set        | WeightedRatingCbr (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | 13/671 |
+| Newest positive rating      | 14/671       |
+
+KeywordsBasedCbr returns the most similar movies given selected movie and was tested empirically only.
+
+## Association Rules Based Recommendation
+
+We implemented method which uses association rules to determine best suited movies as follows: consequents of each rule are scored with respect to antecedents user's rates and lift (score = avg(antecedents rates) * lift). Consequents with highest score are returned as recommendation
+
+#### Results
+
+| Test set        | AssociationRulesRecommendation (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | 80/671 |
+| Newest positive rating      | 81/671       |
