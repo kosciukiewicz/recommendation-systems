@@ -5,6 +5,7 @@ import string
 from ast import literal_eval
 from rake_nltk import Rake
 import operator
+from warnings import warn
 
 
 class FeaturesExtractor:
@@ -21,6 +22,20 @@ class FeaturesExtractor:
         self.movies_metadata_clean = 'movies_metadata_clean.csv'
         self.movies_data_files = ['keywords.csv', 'credits.csv',
                                   self.movies_metadata_clean]
+        self.features_out = 'movies_features.csv'
+
+        self.messages_to_remove = {'overview': 'No overview found.'}
+
+    def save(self, data=None, override=False):
+        path = os.path.join(self.dataset_path, self.features_out)
+        if os.path.exists(path) and not override:
+            warn('Saved features file already exists and cannot be override.')
+        else:
+            data = data if data else self.run()
+            data.to_csv(path, index=False)
+
+    def load(self):
+        return pd.read_csv(os.path.join(self.dataset_path, self.features_out))
 
     def run(self, unique=False):
         if not os.path.exists(os.path.join(self.dataset_path,
@@ -45,7 +60,7 @@ class FeaturesExtractor:
                for f_name in self.movies_data_files]
         data = reduce(lambda df1, df2: pd.merge(df1, df2, on='id', how='outer'),
                       dfs)
-        data = data[self.cols]
+        data = data[self.cols].groupby('id').first().reset_index(level=0)
 
         if small:
             data = self.reduce_num_of_movies(data)
@@ -67,6 +82,8 @@ class FeaturesExtractor:
             lambda value: self.process_dict(value, self.clean_elements))
 
     def process_text_columns(self, data):
+        for col_name, message in self.messages_to_remove.items():
+            data[col_name] = data[col_name].str.replace(message, '')
         data['overview'] = self.process_text_column(data['overview'], 7)
         data['tagline'] = self.process_text_column(data['tagline'], 3)
 

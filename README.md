@@ -79,3 +79,27 @@ In sampling clusters (point 2.), every cluster probability is exponential depend
 |------------------------|----------|----------|----------|
 | Newest rating          | 1.4/671  |  2.1/671 | 7/671    |
 | Newest positive rating | 1.7/671  |  1.7/671 | 5/671    |
+
+## Content Based Recommendation
+
+We implemented content based method which uses user profile matrix and movies matrix to recommend best suited movies based on theirs features (WeightedRatingCbr). Features are extracted from columns such as keywords, cast, genres, tagline and overwiev. If specified column does not contain keywords we use Rake to extract thoes keywords from plain text. Finally we construst feature vector with usage of Bag Of Words model.
+
+#### Results
+
+| Test set        | WeightedRatingCbr (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | 13/671 |
+| Newest positive rating      | 14/671       |
+
+KeywordsBasedCbr returns the most similar movies given selected movie and was tested empirically only.
+
+## Association Rules Based Recommendation
+
+We implemented method which uses association rules to determine best suited movies as follows: consequents of each rule are scored with respect to antecedents user's rates and lift (score = avg(antecedents rates) * lift). Consequents with highest score are returned as recommendation
+
+#### Results
+
+| Test set        | AssociationRulesRecommendation (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | 80/671 |
+| Newest positive rating      | 81/671       |
