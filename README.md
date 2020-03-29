@@ -80,6 +80,14 @@ In sampling clusters (point 2.), every cluster probability is exponential depend
 | Newest rating          | 7.3/671  |  4.9/671 | 14/671    |
 | Newest positive rating | 5.2/671  |  1.7/671 | 9/671    |
 
+## Kmeans clustering
+
+#### Results
+|                        | Cosine | Minkowski_2 | - |
+|------------------------|----------|----------|----------|
+| Newest rating          | 5/671  |  2/671 | -    |
+| Newest positive rating | 7/671  |  6/671 | -    |
+
 ## Content Based Recommendation
 
 We implemented content based method which uses user profile matrix and movies matrix to recommend best suited movies based on theirs features (WeightedRatingCbr). Features are extracted from columns such as keywords, cast, genres, tagline and overwiev. If specified column does not contain keywords we use Rake to extract thoes keywords from plain text. Finally we construst feature vector with usage of Bag Of Words model.
