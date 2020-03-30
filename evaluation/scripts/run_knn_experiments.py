@@ -7,8 +7,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 from deep_learning.utils import get_movie_id_to_feature_mapping
 from evaluation.scripts.run_clustering_experiments import create_kmeans_item_based_input_df
+from knn.knn_collaborative_filtering import KnnCollaborativeFiltering
 from knn.knn_item_based import KnnItemBased
 from utils.evaluation.metrics import hit_rate
+from utils.evaluation.test_train_split import user_leave_on_out
 from utils.features_extraction.movie_lens_features_extractor import FeaturesExtractor
 from utils.id_indexer import Indexer
 from settings import PATH_TO_DATA
@@ -105,5 +107,57 @@ def knn_item_based():
         print(row)
 
 
+def knn_collaborative_filtering():
+    user_ratings_df = pd.read_csv(f"{PATH_TO_DATA}/raw/the-movies-dataset/ratings_small.csv")
+    movies_metadata = pd.read_csv(f"{PATH_TO_DATA}/raw/the-movies-dataset/movies_metadata_clean.csv")
+    movie_id_features_dict = get_movie_id_to_feature_mapping(movies_metadata)
+    user_ratings_df = user_ratings_df[user_ratings_df[item_column].isin(movie_id_features_dict.keys())]
+
+    dataset_path = f'{PATH_TO_DATA}/raw/the-movies-dataset'
+    features_extractor = FeaturesExtractor(dataset_path)
+    movies_data = features_extractor.run()
+    movies_data = movies_data.drop_duplicates(["id"])
+
+    indexer = Indexer(user_ids=user_ratings_df[user_column].unique(), movies_ids=movies_data['id'])
+
+    results = list()
+    metric = 'cosine'   # 'euclidean'
+    for threshold in [None, 4.0]:
+
+        method = KnnCollaborativeFiltering(indexer, n_neighbors=10, metric=metric)
+
+        print("Testing...")
+        iterations = 0
+        all_hits = 0
+
+        for train_df, test_df in user_leave_on_out(user_ratings_df, timestamp_column="timestamp", rating_threshold=threshold):
+            print(iterations)
+            train_ratings = train_df.values[:, :3]
+            user_id, item_id, rating = test_df.values[:, :3][0]
+            method.fit(train_ratings)
+            pred_ids = method.get_recommendations(user_id, top_n=30)
+
+            print("Recommended movies: ")
+            for movie_id in pred_ids:
+                print(movie_id_features_dict[indexer.get_movie_id(movie_id)])
+
+            hits = hit_rate(gt_items_idx=[item_id.astype(int)], predicted_items_idx=pred_ids)
+
+            all_hits += hits
+            iterations += 1
+
+        if all_hits > 0:
+            print(f"{method.__class__}: {all_hits}/{iterations}")
+            print(f"Percentage-wise: {all_hits / iterations}")
+        print(f"Total hits: {all_hits}")
+        print(f"Total iterations: {iterations}")
+
+        results.append([metric, threshold, all_hits])
+
+    for row in results:
+        print(row)
+
+
 if __name__ == '__main__':
-    knn_item_based()
+    # knn_item_based()
+    knn_collaborative_filtering()

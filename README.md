@@ -80,13 +80,31 @@ In sampling clusters (point 2.), every cluster probability is exponential depend
 | Newest rating          | 7.3/671  |  4.9/671 | 14/671    |
 | Newest positive rating | 5.2/671  |  1.7/671 | 9/671    |
 
-## Kmeans clustering
+## Knn Recommendation
 
-#### Results
-|                        | Cosine | Minkowski_2 | - |
-|------------------------|----------|----------|----------|
-| Newest rating          | 5/671  |  2/671 | -    |
-| Newest positive rating | 7/671  |  6/671 | -    |
+**Item based**
+It uses the same movies' features as deep learning method and kmeans. This bag of words based on keywords and description of movie.
+K nearest neighbours algorithm is trained on movies watched and rated by user. Next KNN regression is done to estimate rating for every unwatched movie.
+All movies are sorted by the estimated rating and then top n movies are recommended.
+Algorithm was checked with k equal to 5 and 50. If k > n, then k := n, where n - number of movies rated by user.
+Results are presented for k = 50. 
+
+**User based**
+User is defined by his or her ratings for movies. Top k most similiar user are chosen. Then, all movies rated by these top k users are sorted by their ratings.
+In case of two users rated the same movie, the rating from more similiar user is taken. Recommendation is top n movies from that sorted list.
+Results are presented for k = 10.
+
+#### Results - item based
+|                        | Cosine | Minkowski_2 |
+|------------------------|----------|----------|
+| Newest rating          | 5/671  |  2/671 |
+| Newest positive rating | 7/671  |  6/671 |
+
+#### Results - user based
+|                        | Cosine | Euclidean |
+|------------------------|----------|----------|
+| Newest rating          | 76/671  |  13/671 |
+| Newest positive rating | 78/671  |  9/671 |
 
 ## Content Based Recommendation
 
