@@ -129,3 +129,38 @@ We implemented method which uses association rules to determine best suited movi
 | :-------------: |:-------------:|
 | Newest rating     | 80/671 |
 | Newest positive rating      | 81/671       |
+
+## Hybrid Recommendation
+
+A combination of CBF and CF by weighting or a predicate match.
+
+#### Results
+
+| Test set        | HybridRecommendation (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | 91/671 |
+| Newest positive rating      | 106/671       |
+
+## Marcov chain sequence Recommendation
+
+We treat each movie rating as an element of a sequence of users ratings. Next we use a marcov chain prediction to select the next most likely element in a sequence.
+
+#### Results
+
+| Test set        | MarcovChainRecommendation (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | 54/671 |
+| Newest positive rating      | 44/671       |
+
+## Word2Vec Latent Trajectory Modeling Recommendation
+
+Based on http://dl.acm.org/citation.cfm?id=2799676 paper.
+It estimates for each user a translation vector that would best explain the trajectory of that user in the embedded space. Predictions are made by finding the closest items to the last user item translated by the user's translation vector.
+
+#### Results
+
+| Test set        | Word2VecTrajRecommendation (hits)      |
+| :-------------: |:-------------:|
+| Newest rating     | NA |
+| Newest positive rating      | NA       |
+
